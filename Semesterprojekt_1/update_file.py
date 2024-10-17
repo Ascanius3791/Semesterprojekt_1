@@ -114,6 +114,8 @@ class filemanagement:
         num_of_removed_duplicates = 0
         i = 0
         while(i < len(self.trains)-1):
+            if(self.trains[i].Train_ID == "None"):
+                break
             if(self.trains[i].Train_ID == self.trains[i+1].Train_ID):#if the ID of the current train is the same as the next one
                 num_of_removed_duplicates += 1
                 if(self.trains[i].delay > self.trains[i+1].delay):#remove the one with the lower delay, as this is the one that is not up to date(delays typically increase)
@@ -122,6 +124,7 @@ class filemanagement:
                     self.trains.pop(i)
             else:
                 i+=1
+                
         print("Removed ",num_of_removed_duplicates," duplicates")
     
     def load_from_file(self,file_name):
@@ -153,7 +156,7 @@ def add_new_trains_to_file(max_num_of_new_trains):
     File_Mangagment.replace_file(name_of_file)
     print("There are" ,len(File_Mangagment.trains), "Trains to be found in the file.")  
     
-add_new_trains_to_file(5000)
+add_new_trains_to_file(100)
 
 
 
