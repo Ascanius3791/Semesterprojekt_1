@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from operator import attrgetter
 import string
 import datetime
 from pyhafas import HafasClient
@@ -7,18 +8,23 @@ from pyhafas.profile import DBProfile
 
 client = HafasClient(DBProfile())
 station_ID = client.locations("Frankfurt(Main)Hbf")[0].id
+name_of_file = "train_info.txt"
+file = open(name_of_file,"a")
 
 class Train:
-    Train_ID = ""
-    departure = ""
+    Train_ID = "None"
+    departure = "None"
     delay = 0
     cancelled = False
-    destination = ""
-    type_of_train = ""
-    name = ""
+    destination = "None"
+    type_of_train = "None"
+    name = "None"
+    platform = "None"
     
     
-    def __init__(self,client_departures): 
+    def __init__(self,client_departures=None):
+        if(client_departures is None):
+            return
         self.Train_ID = client_departures.id
         self.delay = self.convert_delay_to_minutes(client_departures.delay)
         self.cancelled = client_departures.cancelled
@@ -26,7 +32,7 @@ class Train:
         self.destination = client_departures.direction
         self.name = client_departures.name
         self.type_of_train = "ICE" if "ICE " in self.name else "RE" if "RE " in self.name else "RB" if "RB " in self.name else "IC" if "IC " in self.name else "S" if "S " in self.name else "STR" if "STR " in self.name else  "U" if "U " in self.name else "Bus" if "Bus " in self.name else "unknown"
-
+        self.platform = str(client_departures.platform)
     def convert_delay_to_minutes(self,delay):
         if(delay == None):
             return 0
@@ -34,6 +40,7 @@ class Train:
         letters = list(str(delay))
         minutes = 60*int(letters[0]) + 10*int(letters[2]) + int(letters[2])
         return minutes 
+    
     def print(self):
         print("Train_ID: ",self.Train_ID)
         print("departure: ",self.departure)
@@ -42,13 +49,67 @@ class Train:
         print("destination: ",self.destination)
         print("type_of_train: ",self.type_of_train)
         print("name: ",self.name)
+        print("platform: ",self.platform)
         print("\n")
     
+    def print_to_file(self,file_name):
+        file = open(file_name,"a")
+        #remove the " " from the ID this is needed to make it consistent, else there are "random" amounts of " " in the ID, same goes for the destination
+        self.Train_ID = self.Train_ID.replace(" ","")
+        file.write(str(self.Train_ID) + " ")
+        file.write(str(self.departure) + " ")
+        file.write(str(self.delay) + " ")
+        file.write(str(self.cancelled) + " ")
+        self.destination = self.destination.replace(" ","")
+        file.write(str(self.destination) + " ")
+        file.write(str(self.type_of_train) + " ")
+        self.name = self.name.replace(" ","")
+        file.write(str(self.name) + " ")
+        self.platform = self.platform.replace(" ","")
+        file.write(str(self.platform) + " ")
+        file.write("\n")
+        
+        file.close()
+        
     
+    def get_train_info_from_file(self,file_name,line):
+        file = open(file_name,"r")
+        
+        for i in range(line):
+            file.readline()
+        info = file.readline()
+        
+        if(info == ""):
+            file.close()
+            return None
+        info = info.split(" ")
+        self.Train_ID = info[0]
+        self.departure = info[1]+" "+info[2]
+        self.delay = int(info[3])
+        self.cancelled = True if info[4] == "True" else False
+        self.destination = info[5]
+        self.type_of_train = info[6]
+        self.name = info[7]
+        self.platform = info[8]
+        file.close()    
+        return True
+                  
 class analysis:
     trains = []
     allowed_types = ["ICE","RE","S","U","STR","Bus","IC","RB","unknown"]
     
+    def load_from_file(self,file_name):
+        line=0
+        while True:
+            train = Train()
+            train.get_train_info_from_file(file_name, line) 
+        
+            if(train.Train_ID == "None"):
+                break
+                print("There are ",len(self.trains)," trains in the list")
+            self.trains.append(train)
+            line+=1
+              
     def train_count(self):
         print("Number of trains: ",len(self.trains))
         return len(self.trains)
@@ -70,30 +131,31 @@ class analysis:
         total_Bus=0
         
         for i in self.trains:
-            if "ICE " in i.name:
+            if "ICE" == i.type_of_train:
                 total_ICE +=1
                 if(i.cancelled):
                     cancelled_ICE+=1
-            if "RE " in i.name:
+            if "RE" == i.type_of_train:
                 total_RE +=1
                 if(i.cancelled):
                     cancelled_RE+=1
-            if "S " in i.name:
+            if "S" == i.type_of_train:
                 total_S +=1
                 if(i.cancelled):
                     cancelled_S+=1
-            if "U " in i.name:
+            if "U" == i.type_of_train:
                 total_U +=1
                 if(i.cancelled):
                     cancelled_U+=1
-            if "STR " in i.name:
+            if "STR" == i.type_of_train:
                 total_STR +=1
                 if(i.cancelled):
                     cancelled_STR+=1
-            if "Bus " in i.name:
+            if "Bus" == i.type_of_train:
                 total_Bus +=1
                 if(i.cancelled):
                     cancelled_Bus+=1
+                    
          
         if(total_ICE != 0):        
             print("total_ICE: ",total_ICE , "cancelled: " ,cancelled_ICE , "that is ",100.0*cancelled_ICE/total_ICE, "%","\n")
@@ -119,7 +181,24 @@ class analysis:
             print("total_Bus: ",total_Bus , "cancelled: " ,cancelled_Bus , "that is ",100.0*cancelled_Bus/total_Bus, "%","\n")
         else:
             print("No Bus found")
-            
+    
+    def delay_by_type(self,type_of_train):
+        if(type_of_train not in self.allowed_types):
+            print("Invalid type of train")
+            return
+        total_num_delay = 0
+        total_trains = 0
+        for i in self.trains:
+            if i.type_of_train == type_of_train:
+                total_trains += 1
+                if(i.delay > 0):
+                    total_num_delay += 1
+        if(total_trains==0):
+            print("No ",type_of_train," found")
+            return       
+        print("total delay of ",type_of_train,": ",total_num_delay/total_trains*100, "%")
+        return total_num_delay/total_trains*100 
+          
     def average_delay_by_type(self,type_of_train):
         if(type_of_train not in self.allowed_types):
             print("Invalid type of train")
@@ -134,6 +213,8 @@ class analysis:
             print("average delay of ",type_of_train,": ",total_delay/total_trains)
         else:
             print("No ",type_of_train," found")
+        if(total_trains == 0):
+            return 0
         return total_delay/total_trains
         
             
@@ -142,26 +223,12 @@ class analysis:
 #input("Press Enter to continue...\n\n")
 
 
-train_info = client.departures(
-    station=station_ID,
-    date=datetime.datetime.now(),
-    max_trips=1000 #about 4500 trains are the maximum available (testet at 00:00)
-)
-
-
-print(train_info[0])            #the [0] gets the info about the 0-th train
-Trains = [Train(client_departures) for client_departures in train_info]
-
-
-print("There are" ,len(Trains), "Trains to be found here.")
-input("Press Enter")
-
-Trains[0].print()
-Trains[1].print()
-
 analysis = analysis()
-analysis.trains = Trains
+analysis.load_from_file(name_of_file)
+
+
 analysis.cancellations_by_type()
+
 analysis.average_delay_by_type("ICE")
 analysis.average_delay_by_type("RE")
 analysis.average_delay_by_type("S")
@@ -169,4 +236,12 @@ analysis.average_delay_by_type("U")
 analysis.average_delay_by_type("STR")
 analysis.average_delay_by_type("Bus")
 analysis.average_delay_by_type("unknown")
+
+analysis.delay_by_type("ICE")
+analysis.delay_by_type("RE")
+analysis.delay_by_type("S")
+analysis.delay_by_type("U")
+analysis.delay_by_type("STR")
+analysis.delay_by_type("Bus")
+analysis.delay_by_type("unknown")
 
