@@ -5,6 +5,8 @@ import string
 import datetime
 from pyhafas import HafasClient
 from pyhafas.profile import DBProfile
+import time
+from zoneinfo import ZoneInfo
 
 client = HafasClient(DBProfile())
 station_ID = client.locations("Frankfurt(Main)Hbf")[0].id
@@ -94,13 +96,12 @@ class filemanagement:
     def __init__(self,max_numb_of_trains):
         train_info = client.departures(
         station=station_ID,
-        date=datetime.datetime.now(),
+        date=datetime.datetime.now(ZoneInfo("Europe/Berlin")),
         max_trips=max_numb_of_trains
     )
         self.trains = [Train(client_departures) for client_departures in train_info]
         for i in self.trains:
             i.print_to_file(name_of_file)
-            print(train_info[0])
     def sort_by_ID(self):#sorts the trains by their ID this is used to find duplicates
         self.trains.sort(key=attrgetter('Train_ID'))
     
@@ -153,6 +154,10 @@ def add_new_trains_to_file(max_num_of_new_trains):
 while(True):    
     add_new_trains_to_file(100)
     import time
+    from zoneinfo import ZoneInfo
+    
+    print("Updated the file")
+    print(datetime.datetime.now(ZoneInfo("Europe/Berlin")))
     time.sleep(2*60) #sleep for 2 minutes such that the API is not overloaded
 
 
