@@ -26,20 +26,13 @@ class Train:
         if(client_departures is None):
             return
         self.Train_ID = client_departures.id
-        self.delay = self.convert_delay_to_minutes(client_departures.delay)
+        self.delay = int(client_departures.delay.seconds)/60.0 if client_departures.delay is not None else 0
         self.cancelled = client_departures.cancelled
         self.departure = client_departures.dateTime
         self.destination = client_departures.direction
         self.name = client_departures.name
         self.type_of_train = "ICE" if "ICE " in self.name else "RE" if "RE " in self.name else "RB" if "RB " in self.name else "IC" if "IC " in self.name else "S" if "S " in self.name else "STR" if "STR " in self.name else  "U" if "U " in self.name else "Bus" if "Bus " in self.name else "unknown"
         self.platform = str(client_departures.platform)
-    def convert_delay_to_minutes(self,delay):
-        if(delay == None):
-            return 0
-        minutes = 0
-        letters = list(str(delay))
-        minutes = 60*int(letters[0]) + 10*int(letters[2]) + int(letters[2])
-        return minutes 
     
     def print(self):
         print("Train_ID: ",self.Train_ID)
@@ -85,13 +78,14 @@ class Train:
         info = info.split(" ")
         self.Train_ID = info[0]
         self.departure = info[1]+" "+info[2]
-        self.delay = int(info[3])
+        self.delay = float(info[3])
         self.cancelled = True if info[4] == "True" else False
         self.destination = info[5]
         self.type_of_train = info[6]
         self.name = info[7]
         self.platform = info[8]
-        file.close()    
+        file.close()   
+        
         return True
         
 class filemanagement:
@@ -106,6 +100,7 @@ class filemanagement:
         self.trains = [Train(client_departures) for client_departures in train_info]
         for i in self.trains:
             i.print_to_file(name_of_file)
+            print(train_info[0])
     def sort_by_ID(self):#sorts the trains by their ID this is used to find duplicates
         self.trains.sort(key=attrgetter('Train_ID'))
     
@@ -155,8 +150,10 @@ def add_new_trains_to_file(max_num_of_new_trains):
     File_Mangagment.remove_duplicates()
     File_Mangagment.replace_file(name_of_file)
     print("There are" ,len(File_Mangagment.trains), "Trains to be found in the file.")  
-    
-add_new_trains_to_file(100)
+while(True):    
+    add_new_trains_to_file(100)
+    import time
+    time.sleep(2*60) #sleep for 2 minutes such that the API is not overloaded
 
 
 
