@@ -153,7 +153,7 @@ def add_new_trains_to_file(max_num_of_new_trains):
     File_Mangagment.replace_file(name_of_file)
     print("There are" ,len(File_Mangagment.trains), "Trains to be found in the file.")  
 while(True):    
-    add_new_trains_to_file(100)
+    add_new_trains_to_file(50)
     import time
     from zoneinfo import ZoneInfo
     
