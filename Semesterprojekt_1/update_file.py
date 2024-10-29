@@ -96,7 +96,8 @@ class filemanagement:
     def __init__(self,max_numb_of_trains):
         train_info = client.departures(
         station=station_ID,
-        date=datetime.datetime.now(ZoneInfo("Europe/Berlin")),
+        duration=120,
+        date=datetime.datetime.now(ZoneInfo("Europe/Berlin"))-datetime.timedelta(hours=1),#get the trains that are departing in +- 1 hour
         max_trips=max_numb_of_trains
     )
         self.trains = [Train(client_departures) for client_departures in train_info]
