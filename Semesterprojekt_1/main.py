@@ -8,88 +8,13 @@ from pyhafas.profile import DBProfile
 import matplotlib.pyplot as plt
 import numpy as np
 
+from train_class import Train
 #client = HafasClient(DBProfile())
 #
 # station_ID = client.locations("Frankfurt(Main)Hbf")[0].id
 name_of_file = "train_info.txt"
 file = open(name_of_file,"a")
 
-class Train:
-    Train_ID = "None"
-    departure = "None"
-    delay = 0
-    cancelled = False
-    destination = "None"
-    type_of_train = "None"
-    name = "None"
-    platform = "None"
-    
-    
-    def __init__(self,client_departures=None):
-        if(client_departures is None):
-            return
-        self.Train_ID = client_departures.id
-        self.delay = int(client_departures.delay.seconds)/60.0 if client_departures.delay is not None else 0
-        self.cancelled = client_departures.cancelled
-        self.departure = client_departures.dateTime
-        self.destination = client_departures.direction
-        self.name = client_departures.name
-        self.type_of_train = "ICE" if "ICE " in self.name else "RE" if "RE " in self.name else "RB" if "RB " in self.name else "IC" if "IC " in self.name else "S" if "S " in self.name else "STR" if "STR " in self.name else  "U" if "U " in self.name else "Bus" if "Bus " in self.name else "unknown"
-        self.platform = str(client_departures.platform)
-    
-    def print(self):
-        print("Train_ID: ",self.Train_ID)
-        print("departure: ",self.departure)
-        print("delay: ",self.delay)
-        print("cancelled: ",self.cancelled)
-        print("destination: ",self.destination)
-        print("type_of_train: ",self.type_of_train)
-        print("name: ",self.name)
-        print("platform: ",self.platform)
-        print("\n")
-    
-    def print_to_file(self,file_name):
-        file = open(file_name,"a")
-        #remove the " " from the ID this is needed to make it consistent, else there are "random" amounts of " " in the ID, same goes for the destination
-        self.Train_ID = self.Train_ID.replace(" ","")
-        file.write(str(self.Train_ID) + " ")
-        file.write(str(self.departure) + " ")
-        file.write(str(self.delay) + " ")
-        file.write(str(self.cancelled) + " ")
-        self.destination = self.destination.replace(" ","")
-        file.write(str(self.destination) + " ")
-        file.write(str(self.type_of_train) + " ")
-        self.name = self.name.replace(" ","")
-        file.write(str(self.name) + " ")
-        self.platform = self.platform.replace(" ","")
-        file.write(str(self.platform) + " ")
-        file.write("\n")
-        
-        file.close()
-      
-    def get_train_info_from_file(self,file_name,line):
-        file = open(file_name,"r")
-        
-        for _ in range(line):
-            file.readline()
-        info = file.readline()
-        
-        if(info == ""):
-            file.close()
-            return None
-        info = info.split(" ")
-        self.Train_ID = info[0]
-        self.departure = info[1]+" "+info[2]
-        self.delay = float(info[3])
-        self.cancelled = True if info[4] == "True" else False
-        self.destination = info[5]
-        self.type_of_train = info[6]
-        self.name = info[7]
-        self.platform = info[8]
-        file.close()   
-        
-        return True
- 
                   
 class analysis:
     trains = []
@@ -139,7 +64,7 @@ class analysis:
         '''Returns a list of the number of cancelled trains departing in each hour of the day, also plots a bar chart of the data'''
         
         departure_times = [i.departure[10:16] for i in self.trains if i.cancelled]
-        [print(i) for i in self.trains if i.cancelled]
+        #[print(i) for i in self.trains if i.cancelled]
         departure_hours = [int(i[1:3]) for i in departure_times]
         print(departure_hours)
         rush_hours = [0]*24
@@ -303,7 +228,20 @@ class analysis:
         if(total_trains == 0):
             return 0
         return total_delay/total_trains
+
+    def get_train_density_per_hour(self):
+        '''Returns a list of the number of trains departing in each hour of the day, also plots a bar chart of the data'''
         
+        departure_times = [i.departure[10:16] for i in self.trains]
+        
+        departure_hours = [int(i[1:3]) for i in departure_times]
+        
+        rush_hours = [0]*24
+        for i in departure_hours:
+            rush_hours[i] += 1
+        print("The rush hours are: ")
+        
+        return rush_hours  
     #now from here lets annswer the questions
     #1hat are the rush hours of the day, where the most trains depart?      
     
@@ -319,4 +257,3 @@ analysis.get_rush_hours()
 analysis.get_cancellation_rush_hours()
 
 analysis.get_relative_cancellation_rush_hours()
-
