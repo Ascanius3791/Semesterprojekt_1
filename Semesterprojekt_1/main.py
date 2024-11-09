@@ -12,6 +12,7 @@ from train_class import Train
 #client = HafasClient(DBProfile())
 #
 # station_ID = client.locations("Frankfurt(Main)Hbf")[0].id
+
 name_of_file = "train_info.txt"
 file = open(name_of_file,"a")
 

@@ -33,23 +33,31 @@ class Train:
         print("\n")
     
     def print_to_file(self,file_name):
+        try:
+            self.Train_ID = self.Train_ID.replace(" ","")
+            self.destination = self.destination.replace(" ","")
+            self.name = self.name.replace(" ","")
+            self.platform = self.platform.replace(" ","")
+        except:
+            pass
         file = open(file_name,"a")
         #remove the " " from the ID this is needed to make it consistent, else there are "random" amounts of " " in the ID, same goes for the destination
-        self.Train_ID = self.Train_ID.replace(" ","")
+        
         file.write(str(self.Train_ID) + " ")
         file.write(str(self.departure) + " ")
         file.write(str(self.delay) + " ")
         file.write(str(self.cancelled) + " ")
-        self.destination = self.destination.replace(" ","")
+        
         file.write(str(self.destination) + " ")
         file.write(str(self.type_of_train) + " ")
-        self.name = self.name.replace(" ","")
+        
         file.write(str(self.name) + " ")
-        self.platform = self.platform.replace(" ","")
+        
         file.write(str(self.platform) + " ")
         file.write("\n")
         
         file.close()
+
       
     def get_train_info_from_file(self,file_name,line):
         file = open(file_name,"r")
